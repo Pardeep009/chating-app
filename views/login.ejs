@@ -1,0 +1,114 @@
+<html>
+    <head>
+        <meta charset =UTF-8>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title></title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/login.css">
+    </head>
+    <body>
+        <div class="login-page">
+            <div class="form">
+                <form class="register-form">
+                    <input type="text" id="register-number" placeholder="Mobile Number" onkeypress="return isNumber(event)" maxlength="10" required/>
+                    <input type="password" id="register-password" placeholder="Password" required/>
+                    <input type="text" id="register-email" placeholder="Email Address" required/>
+                    <button>Create</button>
+                    <p class="message">Already registered? <a onclick="showLoginForm()" >Sign In</a></p>
+                </form>
+                <form class="login-form">
+                    <input type="text" id="login-number" placeholder="Mobile Number" onkeypress="return isNumber(event)" maxlength="10" required/>
+                    <input type="password" id="login-password" placeholder="Password" required/>
+                    <button>Login</button>
+                    <p class="message">Not registered? <a onclick="showRegisterForm()">Create an account</a></p>
+                </form>
+            </div>
+        </div>
+    </body>
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8=" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+    <script>
+
+    function isNumber(evt) 
+        {
+            evt = (evt) ? evt : window.event;
+            var charCode = (evt.which) ? evt.which : evt.keyCode;
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+                return false;
+            }
+            return true;
+        }
+
+        function showRegisterForm()
+        {
+            $('.register-form').show();
+            $('.login-form').hide();
+        }
+
+        function showLoginForm()
+        {
+            $('.register-form').hide();
+            $('.login-form').show();
+        }
+
+        $('.login-form').submit(function()
+        {
+            event.preventDefault();
+            let obj = {
+                phone : $('#login-number').val(),
+                password : $('#login-password').val()
+            }
+            if(isNaN(obj.phone))
+            {
+                alert('Enter Mobile Number');
+                return;
+            }
+            else {
+                console.log('2');
+            }
+            let request = new XMLHttpRequest();
+            request.open('POST','/login');
+            request.setRequestHeader("Content-Type","application/json");
+            request.send(JSON.stringify(obj));
+            request.onload = () => {
+                let text = JSON.parse(request.responseText);
+                if(text == "0")
+                {
+                    console.log(obj);
+                    alert("Invalid Number/Password");
+                }
+                else
+                {
+                    window.location = '/home';
+                }
+            }
+        })
+
+        $('.register-form').submit(function()
+        {
+            event.preventDefault();
+            let obj = {
+                phone : $('#register-number').val(),
+                password : $('#register-password').val(),
+                email : $('#register-email').val()
+            }
+            let request = new XMLHttpRequest();
+            request.open('POST','/addUser');
+            request.setRequestHeader("Content-Type","application/json");
+            request.send(JSON.stringify(obj));
+            request.onload = () => {
+                let text = JSON.parse(request.responseText);
+                if(text == "0")
+                {
+                    console.log(obj);
+                    alert("Phone Number or Email is already Used");
+                }
+                else
+                {   
+                    window.location = '/home';
+                }
+            }
+        })
+
+    </script>
+</html>

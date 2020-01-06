@@ -1,0 +1,64 @@
+<div id="addFriend-model" class="modal fade" role="dialog" >
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content" style="padding:5px;">
+                
+                <div class="modal-header" style="border-style:none; text-align:left;">
+                    <h4 class="modal-title" id="switchmodel-title"></h4>
+                </div>
+
+                <div class="model-body">
+                    <div class="form-group">
+                        <input type="text" id="friend-number-input" placeholder="Mobile Number" onkeypress="return isNumber(event)" maxlength="10" />
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="friend-name-input" placeholder="Enter Name" />
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="border-style:none;">
+                    <button id="yes-switch" type="button" class="btn btn-success" onclick="addFriend()" data-dismiss="">Add</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="createGroup-model" class="modal fade" role="dialog" >
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content" style="padding:5px;">
+                    
+                    <div class="modal-header" style="border-style:none; text-align:left;">
+                        <h4 class="modal-title" id="switchmodel-title"></h4>
+                    </div>
+
+                    <div class="model-body">
+                        <div class="form-group">
+                            <input type="text" id="group-name-input" placeholder="Group Name" />
+                        </div>
+                    </div>
+
+                    <div class="modal-footer" style="border-style:none;">
+                        <button id="yes-switch" type="button" class="btn btn-success" onclick="createGroup()" data-dismiss="">Create Group</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    <div id="addFriendsToGroup-model" class="modal fade" role="dialog" >
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content" style="padding:5px;">
+                
+                <div class="modal-header" style="border-style:none; text-align:left;">
+                    <h4 class="modal-title" id="switchmodel-title"></h4>
+                </div>
+
+                <div class="model-body">
+                    <div id="addFriendsToGroup-div">
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>

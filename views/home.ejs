@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <title>Chat</title>
+    <style>
+
+        body 
+        {
+            overflow: hidden;
+            /* height: 100%; */
+            /* background-image: url("background.jpg");
+            background-repeat: repeat;
+            background-position: center;
+            background-repeat:repeat;
+            background-size: cover;  */
+        }
+
+        /* #send-message-div
+        { */
+             /* position: relative;
+            left: 20px;
+            bottom: 70px; */
+            /* z-index: 1; */
+            /* margin-left: 10px; */
+        /* } */
+
+        .chatdiv {
+            cursor: pointer;
+            padding-top: 10px;
+            padding-left: 4px;
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .msg-div::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hide scrollbar for IE and Edge */
+        .msg-div {
+            height: 520px;
+            overflow-y: scroll; 
+            overflow-x: hidden;
+            -ms-overflow-style: none;
+            background-image: url("chat.jpg");
+            background-repeat: repeat;
+            background-position: center;
+            background-repeat:repeat;
+            background-size: cover;
+        }
+
+        #msg-input {
+            box-shadow: 0 0 4px 0px black;
+        }
+
+        #send-message-button {
+            box-shadow: 0 0 4px 0px black;
+        }
+
+    </style>
+
+</head>
+<body>
+
+    <div class="row" style="width: 100%;" id="wrapper">
+        <div class="col-sm-12">
+            
+            <div class="row">
+
+                <div class="col-sm-4">
+                    <button data-toggle="modal" data-target="#addFriend-model">Add Friend</button>
+                </div>
+                
+                <div class="col-sm-4">
+                    <button data-toggle="modal" data-target="#createGroup-model">Create Group</button>
+                </div>
+                
+                <div class="col-sm-4">
+                    <button onclick="logout()">Logout</button>
+                </div>
+
+            </div>
+
+        </div>
+        <div class="col-sm-4 border" style="padding-right: 0px; overflow: scroll; overflow-x: hidden; height:100vh;" id="members-div">
+
+        </div>
+
+        <div class="col-sm-8 border">
+
+            <div class="row">
+
+                <div class="col-sm-12" id="wlecome-div">
+                    
+                        <center><p>Welcome!!</p></center>
+                    
+                </div>
+                
+                <div class="col-sm-12">
+                    
+                    <div class="row hide-div" style="display: none;">
+    
+                        <div class="col-sm-12">
+                            <p id="current-chat"></p>
+                        </div>
+                    
+                        <div class="col-sm-12" id="load-more-div">
+                            <center><button onclick="getMessage()">Load More</button></center>
+                        </div>
+        
+                        <div class="col-sm-12 msg-div" id="msg-div" style="">
+                            
+                        </div>
+    
+                    </div>
+
+                </div>
+
+                <div class="col-sm-12">
+                    
+                    <div class="row" id="send-message-div">
+                        <div class="col-sm-10" style="padding: 0px;">
+                            
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="msg-input">
+                            </div>
+                            
+                        </div>
+
+                        <div class="col-sm-2" style="padding: 0px;">
+                            <button class="btn btn-block" id="send-message-button" onclick="">Send</button>
+                        </div>
+
+                    </div>
+
+                </div>
+            
+            </div>
+
+        </div>
+
+        <!-- <div class="col-sm-12" id="send-message-div" style="display: none;">
+            <div class="row" id="send-message-div" style="display: none;">
+                <div class="col-sm-10">
+                    
+                        <input type="text" name="" id="msg-input" />
+                    
+                </div>
+                <div class="col-sm-2">
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div> -->
+
+    </div>
+
+    <% include partials/models.ejs %>
+
+   <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8=" crossorigin="anonymous"></script>
+   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+   <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = {}
+        socket = io();
+        // console.log(socket);
+        window.currentchatid = '';
+        window.currentfriendid = '';
+        window.currentgroupid = '';
+        window.personalconnections = [];
+        window.skip_messages = 0;
+        window.userid = "<%= userid %>";
+        window.userphone = "<%= userphone %>"
+        // console.log(userid);
+        socket.emit('new user',window.userid,(data) => {
+            if(data)
+            {
+                alert('You are already logged in somewhere');
+                window.location = '/logout';
+            }
+            else {
+                alert('Welcome');    // will never run
+            }
+        })
+
+        let request = new XMLHttpRequest();
+        request.open('GET','/getConnections');
+        request.send();
+        request.onload = () => {
+            let a = [];
+            let friends = JSON.parse(request.responseText);
+            // console.log(friends);
+            window.personalconnections = friends.personalconnections;
+            a = friends.personalconnections.concat(friends.groupconnections)
+            // console.log(a);
+            for(i in a)
+            {
+                if(a[i].chatid.chatType == "P")      // personal connection
+                {
+                    if(a[i].name || a[i].chatid.message.length)
+                    $('#members-div').append(addFriendToDom(a[i]));
+                } 
+                else                                 // group connection
+                {
+                    console.log(a[i]);
+                    addGroupToDom(a[i]);
+                }
+            }
+        }
+
+        socket.on('new message',(msg) => {
+            // console.log(msg);
+            addNewMessage(msg);
+            
+        })
+
+        socket.on('new message in group',(msg) => {
+            // console.log(msg);
+            addNewMessage(msg);
+        })
+
+        socket.on('added in new group' , (groupid) => {
+            let request = new XMLHttpRequest();
+            request.open('POST','/getGroupDetail');
+            request.setRequestHeader("Content-Type","application/json");
+            request.send(JSON.stringify({
+                groupid : groupid
+            }))
+            request.onload = () => {
+                let response_text = JSON.parse(request.responseText);
+                let chatid = response_text.chatid;
+                delete response_text.chatid;
+                response_text.chatid = {};
+                response_text.chatid._id = chatid;
+                console.log(response_text);
+                addGroupToDom(response_text);
+            }
+        })
+
+        function addFriendToDom(obj)
+        {
+            let div = '<div id="chatdiv'+obj.chatid._id+'" class="border chatdiv" style="cursor: pointer;"'
+                if(obj.name) {
+                    div += 'onclick=showmesagesofFriend("'+obj.chatid._id+'","'+obj.friend.id+'","'+obj.name+'") >'
+                }
+                else {
+                    div += 'onclick=showmesagesofFriend("'+obj.chatid._id+'","'+obj.friend.id+'","'+obj.friend.phone+'") >'
+                }
+                div += '<div class="row">'
+                            +'<div class="col-sm-8">'
+                                +'<h6 id="nameORphone'+obj.chatid._id+'" style="padding-left: 15px">'
+                                if(obj.name)
+                                {
+                                    div += obj.name
+                                }
+                                else {
+                                    div += obj.friend.phone
+                                }
+                            div += '</h6>'
+                            +'</div>'
+                            +'<div class="col-sm-4">'
+                                
+                            +'</div>'
+                       +'</div>'
+                +'</div>';
+                return div;
+                // button.setAttribute( "onClick", "someFunc('new1','new2')" );
+            // $('#members-div').append(div);
+        // div = '<div class="row" id="chatdiv'+obj.chatid._id+'" >' 
+        //         '<div class="col-sm-12 p-2">'
+        //             +'<div style="display : inline;" onclick = showmesagesofFriend("'+obj.chatid._id+'","'+obj.friend.id+'")>'
+        //                 +'<p class="songname-tag">'+obj.songname+'</p>'
+        //             +'</div>'
+        //             +'<div class="dropdown float-right">'
+        //                 +'<a class="btn " type="" data-toggle="dropdown"><i class="material-icons">more_vert</i></a>'
+        //                 +'<ul class="dropdown-menu">'
+        //                     +'<li onclick = playSong("'+encodeURIComponent(obj.songname)+'","'+encodeURIComponent(obj.image)+'")>&nbsp;Play</a></li>'
+        //                     +'<hr>'
+        //                     +'<li onclick = addSong("'+obj._id+'") data-toggle="modal" data-target="#add-song-playlist-modal" >&nbsp;Add To PlayList</li>'
+        //                     if(call == 'p')
+        //                     {
+        //                         div = div + '<hr>'
+        //                         div = div + '<li onclick = removeSong("'+obj._id+'") >&nbsp;Remove from Playlist</li>'
+        //                     }
+        //                 +'</ul>'
+        //             +'</div>'
+        //         +'</div>'
+        //       '</div>'
+        }
+
+        function addGroupToDom(obj)
+        {
+            let div = '<div id="chatdiv'+obj.chatid._id+'" class="border chatdiv" style="cursor: pointer;" onclick=showmesagesofGroup("'+obj.chatid._id+'","'+obj._id+'","'+obj.groupname+'") >'
+                        +'<div class="row">'
+                            +'<div class="col-sm-8">'
+                                +'<h6 id="groupname'+obj.chatid._id+'" style="display : inline;  padding-left: 15px;">'+obj.groupname+'</h6>'
+                            +'</div>'
+                            +'<div class="col-sm-4">'
+                                if(obj.creater.id == userid)
+                                {
+                                    div += '<div class="dropdown float-right">'
+                                                +'<a class="btn " type="" data-toggle="dropdown"><i class="material-icons">more_vert</i></a>'
+                                                +'<ul class="dropdown-menu">'
+                                                    +'<li onclick=getPersonalConnections("'+obj._id+'") data-toggle="modal" data-target="#addFriendsToGroup-model" >&nbsp;Add Member</li>'
+                                                +'</ul>'
+                                            +'</div>'
+                                }
+                            +'</div>'
+                       +'</div>'
+                +'</div>';
+            $('#members-div').append(div);
+            socket.emit('new group' , obj._id , (a) => {
+                        // console.log(a);
+                    })
+        }
+
+        function getPersonalConnections(groupid)
+        {
+            let div = $('#addFriendsToGroup-div');
+            $(div).html('');
+            let request = new XMLHttpRequest();
+            request.open('POST','/getPersonalConnections');
+            request.setRequestHeader("Content-Type","application/json");
+            request.send(JSON.stringify({
+                userid : window.userid
+            }))
+            request.onload = ()=>
+            {
+                let response_text = JSON.parse(request.responseText);
+                // console.log(response_text);
+                $("#addFriendsToGroup-div").hide();
+                for(i in response_text.personalconnections)
+                {
+                    addFriendsInGroupModel(response_text.personalconnections[i],groupid);
+                }
+                let req = new XMLHttpRequest();
+                req.open('POST','/getMembersOfGroup');
+                req.setRequestHeader("Content-Type","application/json");
+                req.send(JSON.stringify({
+                    groupid : groupid
+                }))
+                req.onload = () => {
+                    let rt = JSON.parse(req.responseText);
+                    // console.log(rt);
+                    for(i in rt.groupmembers)
+                    {
+                        if($('#addFriend'+rt.groupmembers[i].id))
+                        {
+                            $('#addFriend'+rt.groupmembers[i].id).attr('disabled',true);
+                        }
+                    }
+                    $("#addFriendsToGroup-div").show();
+                }
+            }
+        }
+        // addFriendsToGroup-div
+
+        function addFriendsInGroupModel(obj,groupid)
+        {
+            let div = '<div class="row" style="cursor:pointer;">'
+                        +'<div class="col-sm-8">'
+                            +'<p>'
+                                if(obj.name)
+                                div += obj.name
+                                else
+                                div += obj.friend.phone
+                    div += '</p>'
+                        +'</div>'
+                        +'<div class="col-sm-4">'
+                            +'<button type="button" class="btn btn-primary" id="addFriend'+obj.friend.id+'" onclick = addFriendToGroup("'+obj.friend.id+'","'+obj.friend.phone+'","'+groupid+'")>Add</button>'
+                        +'</div>'    
+                      +'</div>'
+            $('#addFriendsToGroup-div').append(div);          
+        }
+
+        function addFriendToGroup(friendid,friendphone,groupid)
+        {
+            let request = new XMLHttpRequest();
+            request.open('POST','/addFriendToGroup');
+            request.setRequestHeader("Content-Type","application/json");
+            request.send(JSON.stringify({
+                groupid : groupid,
+                member : {
+                    id : friendid,
+                    phone : friendphone,
+                }
+            }))
+            request.onload = () => {
+                alert('friend added');
+                $('#addFriend'+friendid).attr('disabled',true);
+                // emit event to this added friend
+                let obj = {
+                    groupid : groupid,
+                    friendid : friendid
+                }
+                socket.emit('friend in new group',obj,() => {
+                    // console.log('event emiited');
+                })
+            }
+            // console.log(friendid,groupid);
+        }
+
+        function showmesages(chatid)
+        {
+                $('#msg-div').html('');
+                $('#chatdiv'+window.currentchatid).css('background-color','');
+                window.skip_messages = 0;
+                window.currentchatid = chatid;
+                $('.hide-div').show();
+                $('#chatdiv'+chatid).css('background-color','#14270a52');
+                getMessage();
+        }
+
+        function showmesagesofGroup(chatid,groupid,groupname)
+        {
+            if(window.currentchatid == '')
+            {
+                $('#wlecome-div').hide();
+            }
+            if(window.currentchatid != chatid)
+            {
+                window.currentfriendid = '';
+                window.currentgroupid = groupid;
+                $('#current-chat').html(groupname);
+                showmesages(chatid);
+            }
+        }
+
+        function showmesagesofFriend(chatid,friendid,friendname)
+        {   
+            if(window.currentchatid == '')
+            {
+                $('#wlecome-div').hide();
+            }
+            if(window.currentchatid != chatid)
+            {
+                window.currentfriendid = friendid;
+                window.currentgroupid = '';
+                $('#current-chat').html(friendname);
+                showmesages(chatid);
+            }
+        }
+
+        // function getMessage(chatid,skip_count)
+        // {
+        function getMessage()
+        {
+            // let obj = {
+            //     skip : skip_count
+            // }
+            // $('#msg-div').html('');
+            // console.log(window.currentchatid,window.skip_messages);
+            let request = new XMLHttpRequest();
+            request.open('GET','/getMessages/'+window.currentchatid+'/'+window.skip_messages);
+            request.send();
+            request.onload = () => {
+                let messages = JSON.parse(request.responseText);
+                // console.log(messages);
+                for(i in messages.message)
+                {
+                    // addMessagesToDOM(messages.message[i]);
+                    $('#msg-div').prepend(addMessagesToDOM(messages.message[i]));
+                }
+                window.skip_messages += 10;
+            }
+        }
+
+        function addMessagesToDOM(obj)
+        {
+            // console.log(obj);
+            let div = '<p '
+                if(obj.senderid == window.userid)
+                {
+                    div = div + 'align="right">'
+                }
+                else {
+                    div = div + 'align="left">'
+                }
+                    div += obj.text
+                      +'</p>'
+            return div;
+        }
+
+        function sendMessage()
+        {
+            let message = $('#msg-input').val();
+            if(message == '')
+            {
+                return;
+            }
+            $('#msg-input').val('');
+            // ------
+            // let obj = {
+            //     text : message,
+            //     groupid : window.currentgroupid
+            // }
+            // socket.emit('send message in group',obj,()=> {
+            //         console.log('message sent');
+            //     })
+            // ------
+            let time = getTime()
+            let sender = {
+                id : window.userid,
+                phone : window.userphone
+            }
+            let obj = {
+                senderid : sender.id,
+                senderphone : sender.phone,
+                text : message,
+                time : time,
+            }
+            // console.log(obj);
+            let req = new XMLHttpRequest();
+            req.open('POST','/sendMessage/'+window.currentchatid);
+            req.setRequestHeader("Content-Type","application/json");
+            req.send(JSON.stringify(obj));
+            req.onload = () => {
+                if(window.currentgroupid == '')
+                {
+                    obj = {};
+                    obj = {
+                        text : message,
+                        receiverid : window.currentfriendid,
+                        senderid : window.userid,
+                        senderphone : window.userphone,
+                        // sender : {
+                        //     id : window.userid,
+                        //     phone : window.userphone
+                        // },
+                        chatid : window.currentchatid,
+                        time : time
+                    }
+                    addNewMessage(obj);
+                    socket.emit('send message',obj,()=> {
+                        // console.log('message sent');
+                    })
+                }
+                else {
+                    obj = {
+                        text : message,
+                        chatid : window.currentchatid,
+                        time : time,
+                        // sender : {
+                        //     id : window.userid,
+                        //     phone : window.userphone,
+                        // },
+                        senderid : window.userid,
+                        senderphone : window.userphone,
+                        groupid : window.currentgroupid
+                    }
+                    addNewMessage(obj);
+                    socket.emit('send message in group',obj,()=> {
+                        // console.log('message sent');
+                    })
+                }
+            }
+        }
+
+        function getTime()
+        {
+            let date = new Date();
+            let time = {
+                year : date.getFullYear(),
+                month : date.getMonth()+1,
+                date : date.getDate(),
+                minute : date.getMinutes(),
+                second : date.getSeconds(),
+                day : date.getDay()+1,
+                hour : date.getHours()
+            }
+            return time;
+        }
+
+        function isNumber(evt) 
+        {
+            evt = (evt) ? evt : window.event;
+            var charCode = (evt.which) ? evt.which : evt.keyCode;
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+                return false;
+            }
+            return true;
+        }
+
+        function addNewMessage(msg)
+        {
+            if(msg.chatid == window.currentchatid)
+            {
+                $('#msg-div').append(addMessagesToDOM(msg));
+            }
+            let div = $('#chatdiv'+msg.chatid).prop('outerHTML');
+            // console.log(div);
+            if(div)
+            {
+                $('#chatdiv'+msg.chatid).remove();
+                $('#members-div').prepend(div);
+            }
+            else {
+                let obj = {
+                    chatid : {
+                        _id : msg.chatid,
+                    },
+                    friend : {
+                        id : msg.senderid,
+                        phone : msg.senderphone
+                    },
+                    name : "",
+                }
+                $('#members-div').prepend(addFriendToDom(obj));
+            }
+        }
+
+        function addFriend()
+        {
+            let obj = {
+                phone : $('#friend-number-input').val(),
+                name : $('#friend-name-input').val(),
+                time : getTime()
+            }
+            $('#friend-number-input').val('');
+            $('#friend-name-input').val('');
+            if(obj.phone == window.userphone)
+            {
+                alert('can\'t add to yourself');
+                return;
+            }
+            if(obj.phone == "" || obj.name == "")
+            {
+                alert('Enter All Details');
+                return;
+            }
+            let request = new XMLHttpRequest();
+            request.open('POST','/addFriend');
+            request.setRequestHeader("Content-Type","application/json");
+            request.send(JSON.stringify(obj));
+            request.onload = () => {
+                let response_text = JSON.parse(request.responseText);
+                // console.log(response_text,obj);
+                if(response_text == "0")
+                {
+                    alert('You Entered a Wrong Number,No such Friend Exist')
+                }
+                else if(response_text == "1") {
+                    alert('Already Your Friend');
+                }
+                else {
+                    let new_friend = {
+                        chatid : {
+                            _id : response_text.chatid,
+                        },
+                        friend : {
+                            id : response_text.friendid,
+                            phone : obj.phone,
+                        },
+                        name : obj.name,
+                    }
+                    // window.personalconnections.push();
+                    let div = $('#chatdiv'+new_friend.chatid._id).prop('outerHTML');
+                    if(div)
+                    {
+                        $('#nameORphone'+new_friend.chatid._id).html(new_friend.name);
+                    }
+                    else {
+                        $('#members-div').prepend(addFriendToDom(new_friend));
+                    // addFriendToDom(new_friend);
+                    }
+                    alert('Added as your friend');
+                }
+            }
+        }
+        
+        function createGroup()
+        {
+           let groupname = $('#group-name-input').val();
+           if(groupname == "")
+            return;
+           $('#group-name-input').val('');
+           let obj = {
+               groupname : groupname,
+               createDate : getTime(),
+           }
+           let request = new XMLHttpRequest();
+           request.open('POST','/createGroup');
+           request.setRequestHeader("Content-Type","application/json");
+           request.send(JSON.stringify(obj));
+           request.onload = () => {
+                let response_text = JSON.parse(request.responseText);
+                let new_group = {
+                    chatid : {
+                        _id : response_text.chatid,
+                    },
+                    groupname : obj.groupname,
+                    creater : {
+                        id : window.userid,
+                        phone : window.userphone
+                    },
+                    _id : response_text.groupid
+                }
+                addGroupToDom(new_group);
+           }
+        }
+
+        function logout()
+        {
+            socket.emit('disconnect');
+            window.location = '/logout';
+        }
+
+    </script>
+</body>
+<!-- <script src="home.js">
+</script> -->
+</html>
